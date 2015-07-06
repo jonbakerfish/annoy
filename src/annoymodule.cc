@@ -147,6 +147,27 @@ py_an_get_nns_by_item(py_annoy *self, PyObject *args) {
 
 
 static PyObject* 
+py_an_get_nnsd_by_item(py_annoy *self, PyObject *args) {
+  int32_t item, n, search_k=-1;
+  if (!self->ptr) 
+    return Py_None;
+  if (!PyArg_ParseTuple(args, "ii|i", &item, &n, &search_k))
+    return Py_None;
+
+  PyObject* l = PyList_New(0);
+  vector< pair<int32_t,double> > result;
+  self->ptr->get_nns_by_item(item, n, &result, search_k);
+  for (size_t i = 0; i < result.size(); i++) {
+    PyObject* tup = PyTuple_New(2);
+    PyTuple_SetItem(tup,0,PyInt_FromLong(result[i].first));
+    PyTuple_SetItem(tup,1,PyFloat_FromDouble(result[i].second));
+    PyList_Append(l, tup);
+  }
+  return l;
+}
+
+
+static PyObject* 
 py_an_get_nns_by_vector(py_annoy *self, PyObject *args) {
   PyObject* v;
   int32_t n, search_k=-1;
@@ -165,6 +186,34 @@ py_an_get_nns_by_vector(py_annoy *self, PyObject *args) {
   PyObject* l = PyList_New(0);
   for (size_t i = 0; i < result.size(); i++) {
     PyList_Append(l, PyInt_FromLong(result[i]));
+  }
+  return l;
+}
+
+
+static PyObject* 
+py_an_get_nnsd_by_vector(py_annoy *self, PyObject *args) {
+  PyObject* v;
+  int32_t n, search_k=-1;
+  if (!self->ptr) 
+    return Py_None;
+  if (!PyArg_ParseTuple(args, "Oi|i", &v, &n, &search_k))
+    return Py_None;
+
+  vector<float> w(self->f);
+  for (int z = 0; z < PyList_Size(v) && z < self->f; z++) {
+    PyObject *pf = PyList_GetItem(v,z);
+    w[z] = PyFloat_AsDouble(pf);
+  }
+
+  PyObject* l = PyList_New(0);
+  vector< pair<int32_t,double> > result;
+  self->ptr->get_nns_by_vector(&w[0], n, &result, search_k);
+  for (size_t i = 0; i < result.size(); i++) {
+    PyObject* tup = PyTuple_New(2);
+    PyTuple_SetItem(tup,0,PyInt_FromLong(result[i].first));
+    PyTuple_SetItem(tup,1,PyFloat_FromDouble(result[i].second));
+    PyList_Append(l, tup);
   }
   return l;
 }
@@ -282,7 +331,9 @@ static PyMethodDef AnnoyMethods[] = {
   {"load",	(PyCFunction)py_an_load, METH_VARARGS, ""},
   {"save",	(PyCFunction)py_an_save, METH_VARARGS, ""},
   {"get_nns_by_item",(PyCFunction)py_an_get_nns_by_item, METH_VARARGS, ""},
+  {"get_nnsd_by_item",(PyCFunction)py_an_get_nnsd_by_item, METH_VARARGS, ""},
   {"get_nns_by_vector",(PyCFunction)py_an_get_nns_by_vector, METH_VARARGS, ""},
+  {"get_nnsd_by_vector",(PyCFunction)py_an_get_nnsd_by_vector, METH_VARARGS, ""},
   {"get_item_vector",(PyCFunction)py_an_get_item_vector, METH_VARARGS, ""},
   {"add_item",(PyCFunction)py_an_add_item, METH_VARARGS, ""},
   {"build",(PyCFunction)py_an_build, METH_VARARGS, ""},
